@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>データグラフ化サンプル</title>
+    
+    <script type="text/javascript" src="//www.google.com/jsapi"></script>
+    <script type="text/javascript" src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+    
+    <script type="text/javascript">
+      var wsUrl = 'ws://' + location.hostname + '/ws/sensor';
+      
+      var socket;
+      var gtData, gtOptions, gtChart;
+      var ghData, ghOptions, ghChart;
+      var goData, goOptions, goChart;
+      var lineData, lineOptions, lineChart;
+      var lines = new Array();
+      var cnt = 0;
+      
+      // Google Gauge
+      google.load("visualization", "1.0", {packages:["line"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+        // Data for chart
+//        lines[0] = [];
+        lineData = google.visualization.arrayToDataTable( lines );
+        
+        // Option for chart
+        // If you want to set other options, please refer to https://developers.google.com/chart/interactive/docs/gallery/gauge
+        lineOptions = {
+          width: 400, height: 200,
+          curveType: 'function',
+          legend: { position: 'bottom' }
+        };
+
+        lineChart = new google.charts.Line(document.getElementById('lineChart'));
+        //lineChart.draw(lineData, lineOptions);
+      };
+      
+      function connect() {
+        lines[0] = [];
+        socket = new WebSocket(wsUrl);
+        socket.onmessage = function(e) {
+          var sensorData = JSON.parse(e.data);
+          //console.log( sensorData );
+
+          // 
+          if( lines[0].length == 0 ){
+            lines[0].push( '' );
+            $.each( sensorData, function( k, v ){
+              if( !isNaN( v ) ){
+                lines[0].push( k );
+              }else if( $.isArray( v ) ){
+                $.each( v, function( k1, v1 ){
+                  if( !isNaN( v1 ) ){
+                    lines[0].push( k + "_" + k1 );
+                  }
+                });
+              }
+            });
+          }
+          
+          // Update data
+          if( cnt >= 100 ){
+            for( i = 1; i < cnt; i ++ ){
+              lines[i] = lines[i+1];
+            }
+          }else{
+            cnt ++;
+          }
+          
+          lines[cnt] = [];
+          lines[cnt].push( '' );
+          $.each( sensorData, function( k, v ){
+            if( !isNaN( v ) ){
+              lines[cnt].push( v );
+            }else if( $.isArray( v ) ){
+              $.each( v, function( k1, v1 ){
+                if( !isNaN( v1 ) ){
+                  lines[cnt].push( v1 );
+                }
+              });
+            }
+          });
+          //console.log( lines );
+          lineData = google.visualization.arrayToDataTable( lines );
+          lineChart.draw(lineData, lineOptions);
+        };
+      };
+      
+      function disconnect() {
+        socket.close();
+      };
+        
+    </script>
+  </head>
+  <body onload="connect()">
+    <h1>データグラフ化サンプル</h1>
+    <div>
+      <table border="0">
+      <tr>
+      <td colspan="3"><div id="lineChart" style="width: 400px; height: 200px;"></div></td>
+      </tr>
+      </table>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>WebSocket サンプル</title>
+<script type="text/javascript">
+var wsUrl = 'ws://' + location.hostname + '/ws/sensor';
+var socket;
+function connect(){
+  socket = new WebSocket(wsUrl);
+  socket.onmessage = function( e ){
+    var socketData = JSON.parse( e.data );
+    console.log( socketData );
+  };
+}
+</script>
+</head>
+<body onload="connect()">
+<h1>WebSocket サンプル</h1>
+<p>ブラウザのコンソールを開いて WebSocket データを確認してください。</p>
+</body>
+</html>
