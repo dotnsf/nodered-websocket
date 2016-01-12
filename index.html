@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>QuickStart MQTT</title>
+<script src="//code.jquery.com/jquery-2.0.3.min.js"></script>
+<script src="./mqttws31.js"></script>
+
+<script type="text/javascript">
+var deviceid = location.hostname;
+var devicetype = "MyDevice";
+var eventtype = "MyEvent";
+var client;
+var pubTopic = 'iot-2/evt/status/fmt/json';
+var mqttServer = 'ws://quickstart.messaging.internetofthings.ibmcloud.com:1883/';
+var message = '{ "val1":123, "val2":"ABC" }';
+
+var jsonData = {};
+jsonData.d = {};
+
+$(function(){
+  $('#deviceid').html( location.hostname );
+  $('#devicetype').html( devicetype );
+  $('#eventtype').html( eventtype );
+  $('#message').val( message );
+  $('#publish').click( function(){
+    publishMessage();
+    return false;
+  });
+	
+  var clientID = "d:quickstart:" + devicetype + ":" + deviceid;
+  console.log( "mqttServer=" + mqttServer );
+  console.log( "clientID=" + clientID );
+  client = new Paho.MQTT.Client( mqttServer, clientID );
+  client.onConnectionLost = onConnectionLost;
+  client.connect( { onSuccess: onConnect, onFailure: onConnectFailure } );
+});
+
+function publishMessage(){
+  if( deviceid != null ){
+    jsonData.d = JSON.parse( $('#message').val() );
+    jsonData.publish();
+    //console.log( $('#message').val() );
+  }
+}
+
+
+function onConnect(){
+  console.log( "Connected" );
+}
+
+function onConnectFailure( error ){
+  console.log( "Connect Failed" );
+  console.log( error.errorCode );
+  console.log( error.errorMessage );
+}
+
+function onConnectionLost( response ){
+  console.log( "onConnectionLost" )
+  if( response.errorCode !== 0 ){
+    console.log( "onConnectionLost:" + response.errorMessage );
+  }
+  clearInterval( 3000 );
+  client.connect( { onSuccess: onConnect, onFailure: onConnectFailure } );
+}
+
+
+jsonData.toJson = function(){
+  return JSON.stringify( this );
+}
+
+jsonData.publish = function(){
+  var json_message = new Paho.MQTT.Message( jsonData.toJson() );
+  json_message.destinationName = pubTopic;
+  json_message.qos = 0;
+  client.send( json_message );
+}
+</script>
+
+</head>
+<body>
+
+<form>
+<table border="1">
+<tr><td>DeviceID</td><td><div id="deviceid"></div></td></tr>
+<tr><td>DeviceType</td><td><div id="devicetype"></div></td></tr>
+<tr><td>EventType</td><td><div id="eventtype"></div></td></tr>
+<tr><td>Message</td><td>
+<textarea id="message" cols="80" rows="10"></textarea>
+</td></tr>
+<tr><td colspan="2" align="right"><input type="Button" id="publish" value="Publish"/></td></tr>
+</table>
+</form>
+
+</body>
+</html>
