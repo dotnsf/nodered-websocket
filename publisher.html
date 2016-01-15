@@ -71,7 +71,7 @@ jsonData.toJson = function(){
 }
 
 jsonData.publish = function(){
-  var json_message = new Paho.MQTT.Message( jsonData.toJson() );
+  var json_message = new Messaging.Message( jsonData.toJson() );
   json_message.destinationName = pubTopic;
   json_message.qos = 0;
   client.send( json_message );
