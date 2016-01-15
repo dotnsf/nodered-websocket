@@ -12,7 +12,8 @@ var devicetype = "MyDevice";
 var eventtype = "MyEvent";
 var client;
 var pubTopic = 'iot-2/evt/status/fmt/json';
-var mqttServer = 'ws://quickstart.messaging.internetofthings.ibmcloud.com:1883/';
+var mqttServer = 'quickstart.messaging.internetofthings.ibmcloud.com';
+var mqttPort = 443;
 var message = '{ "val1":123, "val2":"ABC" }';
 
 var jsonData = {};
@@ -31,9 +32,9 @@ $(function(){
   var clientID = "d:quickstart:" + devicetype + ":" + deviceid;
   console.log( "mqttServer=" + mqttServer );
   console.log( "clientID=" + clientID );
-  client = new Paho.MQTT.Client( mqttServer, clientID );
+  client = new Messaging.Client( mqttServer, mqttPort, clientID );
   client.onConnectionLost = onConnectionLost;
-  client.connect( { onSuccess: onConnect, onFailure: onConnectFailure } );
+  client.connect( { onSuccess: onConnect, onFailure: onConnectFailure, useSSL: true } );
 });
 
 function publishMessage(){
