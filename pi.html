@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>ラズベリーパイデータの視覚化サンプル</title>
+    
+    <script type="text/javascript" src="//www.google.com/jsapi"></script>
+    
+    <script type="text/javascript">
+      var wsUrl = 'ws://' + location.hostname + '/ws/sensor';
+      
+      var socket;
+      var gtData, gtOptions, gtChart;
+      var ghData, ghOptions, ghChart;
+      var gmData, gmOptions, gmChart;
+      var goData, goOptions, goChart;
+      var lineData, lineOptions, lineChart;
+      var lines = new Array();
+      var cnt = 0;
+      
+      // Google Gauge
+      google.load("visualization", "1.0", {packages:["gauge","line"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+        // Data for chart
+        gtData = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['CPU Temp', 0]
+        ]);
+        ghData = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['CPU Load', 0]
+        ]);
+        gmData = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['Memory', 0]
+        ]);
+        goData = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['Sin', 0]
+        ]);
+        
+        lines[0] = ['', 'CPU Temp', 'CPU Load', 'Memory', 'Sin'];
+        lineData = google.visualization.arrayToDataTable( lines );
+        
+        // Option for chart
+        // If you want to set other options, please refer to https://developers.google.com/chart/interactive/docs/gallery/gauge
+        gtOptions = {
+          width: 120, height: 120,
+          min: 0, max: 100,
+          redFrom: 50, redTo: 100,
+          yellowFrom:40, yellowTo: 50,
+          minorTicks: 5
+        };
+        ghOptions = {
+          width: 120, height: 120,
+          min: 0, max: 100,
+          redFrom: 80, redTo: 100,
+          yellowFrom:50, yellowTo: 80,
+          minorTicks: 5
+        };
+        gmOptions = {
+          width: 120, height: 120,
+          min: 0, max: 4000,
+          redFrom: 3200, redTo: 4000,
+          yellowFrom:2000, yellowTo: 3200,
+          minorTicks: 100
+        };
+        goOptions = {
+          width: 120, height: 120,
+          min: -100, max: 100,
+          redFrom: 75, redTo: 100,
+          yellowFrom:50, yellowTo: 75,
+          minorTicks: 10
+        };
+        lineOptions = {
+          width: 360, height: 200,
+          curveType: 'function',
+          legend: { position: 'bottom' }
+        };
+                
+        gtChart = new google.visualization.Gauge(document.getElementById('gtChart'));
+        ghChart = new google.visualization.Gauge(document.getElementById('ghChart'));
+        gmChart = new google.visualization.Gauge(document.getElementById('gmChart'));
+        goChart = new google.visualization.Gauge(document.getElementById('goChart'));
+        
+        gtChart.draw(gtData, gtOptions);
+        ghChart.draw(ghData, ghOptions);
+        gmChart.draw(gmData, gmOptions);
+        goChart.draw(goData, goOptions);
+
+        lineChart = new google.charts.Line(document.getElementById('lineChart'));
+        //lineChart.draw(lineData, lineOptions);
+      };
+      
+      function connect() {
+        socket = new WebSocket(wsUrl);
+        socket.onmessage = function(e) {
+          var sensorData = JSON.parse(e.data);
+          //console.log( sensorData );
+          
+          // Update data
+          gtData.setValue(0, 1, sensorData.cputemp);
+          ghData.setValue(0, 1, sensorData.cpuload * 100);
+          gmData.setValue(0, 1, sensorData.memoryusage );
+          goData.setValue(0, 1, sensorData.sine * 100);
+          
+          if( cnt >= 100 ){
+            for( i = 1; i < cnt; i ++ ){
+              lines[i] = lines[i+1];
+            }
+          }else{
+            cnt ++;
+          }
+          lines[cnt] = [ '', sensorData.cputemp, sensorData.cpuload * 100, sensorData.memoryusage / 40, sensorData.sine * 100 ];
+          //console.log( lines );
+          lineData = google.visualization.arrayToDataTable( lines );
+          
+          gtChart.draw(gtData, gtOptions);
+          ghChart.draw(ghData, ghOptions);
+          gmChart.draw(gmData, gmOptions);
+          goChart.draw(goData, goOptions);
+          lineChart.draw(lineData, lineOptions);
+        };
+      };
+      
+      function disconnect() {
+        socket.close();
+      };
+        
+    </script>
+  </head>
+  <body onload="connect()">
+    <h1>ラズベリーパイデータの視覚化サンプル</h1>
+    <div>
+      <table border="0">
+      <tr>
+      <td><div id="gtChart" style="width: 120px; height: 120px;"></div></td>
+      <td><div id="ghChart" style="width: 120px; height: 120px;"></div></td>
+      <td><div id="gmChart" style="width: 120px; height: 120px;"></div></td>
+      <td><div id="goChart" style="width: 120px; height: 120px;"></div></td>
+      </tr>
+      <tr>
+      <td colspan="3"><div id="lineChart" style="width: 360px; height: 200px;"></div></td>
+      </tr>
+      </table>
+    </div>
+  </body>
+</html>
